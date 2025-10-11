@@ -1,0 +1,79 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+*.txt
+LICENSE
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+*.tar
+*.gz
+*.zip
+
+# GitHub Actions
+.github/
+
+# Docker files (except the one being built)
+docker-compose*.yml
+Dockerfile.*
+!Dockerfile.wan22
+
+# Scripts not needed in container
+scripts/*.ps1
+scripts/*.bat
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# CI/CD
+.circleci/
+.travis.yml
+azure-pipelines.yml
+
+# Node modules (if any)
+node_modules/
+

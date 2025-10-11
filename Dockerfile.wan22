@@ -56,11 +56,14 @@ RUN /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSI
 # Install PyTorch with CUDA 12.8 support
 # Using regular pip instead of uv pip for better compatibility with PyTorch index
 # This will install the latest available version (including nightly builds if needed)
-RUN pip install --upgrade --force-reinstall \
+# CRITICAL: Use --no-cache-dir to prevent disk space issues and clean up after installation
+RUN pip install --no-cache-dir --upgrade --force-reinstall \
     torch \
     torchvision \
     torchaudio \
-    --index-url https://download.pytorch.org/whl/cu128
+    --index-url https://download.pytorch.org/whl/cu128 \
+    && rm -rf /root/.cache/pip \
+    && rm -rf /tmp/*
 
 # Change to ComfyUI directory
 WORKDIR /comfyui
@@ -71,8 +74,10 @@ ADD runpod-worker-comfyui/src/extra_model_paths.yaml ./
 # Go back to root
 WORKDIR /
 
-# Install RunPod handler dependencies
-RUN uv pip install runpod requests websocket-client
+# Install RunPod handler dependencies and clean up
+RUN uv pip install --no-cache runpod requests websocket-client \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /tmp/*
 
 # ============================================================================
 # Stage 2: Install Custom Nodes
@@ -89,8 +94,8 @@ RUN rm -rf ComfyUI-Manager && \
 RUN rm -rf ComfyUI-WanVideoWrapper && \
     git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
 
-# Install WAN Video Wrapper dependencies
-RUN uv pip install \
+# Install WAN Video Wrapper dependencies and clean up
+RUN uv pip install --no-cache \
     ftfy \
     accelerate>=1.2.1 \
     einops \
@@ -101,17 +106,19 @@ RUN uv pip install \
     pyloudnorm \
     gguf>=0.17.1 \
     opencv-python \
-    scipy
+    scipy \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /tmp/*
 
-# Install additional dependencies for SageAttention
-RUN uv pip install \
+# Install additional dependencies for SageAttention and clean up
+RUN uv pip install --no-cache \
     wheel \
     setuptools \
     packaging \
-    ninja
-
-# Install Triton for SageAttention (Linux version)
-RUN uv pip install triton
+    ninja \
+    triton \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /tmp/*
 
 # ============================================================================
 # Stage 3: Install SageAttention2 (pre-built wheel, no compilation needed)
@@ -121,20 +128,24 @@ FROM custom_nodes AS sageattention
 # Install SageAttention2 - pre-built wheel that works with all CUDA architectures
 # This is simpler and faster than compiling SageAttention3 from source
 RUN echo "Installing SageAttention2..." && \
-    uv pip install sageattention
+    uv pip install --no-cache sageattention \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /tmp/*
 
 # ============================================================================
 # Stage 4: Install JupyterLab
 # ============================================================================
 FROM sageattention AS jupyter
 
-# Install JupyterLab and related packages
-RUN uv pip install \
+# Install JupyterLab and related packages and clean up
+RUN uv pip install --no-cache \
     jupyterlab \
     notebook \
     ipywidgets \
     matplotlib \
-    pandas
+    pandas \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /tmp/*
 
 # Create JupyterLab configuration directory
 RUN mkdir -p /root/.jupyter
