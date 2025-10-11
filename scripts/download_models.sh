@@ -34,12 +34,36 @@ download_model() {
     local url=$1
     local output=$2
     local name=$(basename "$output")
-    
+
     if [ -f "$output" ]; then
         echo "✅ $name already exists, skipping..."
     else
         echo "📥 Downloading $name..."
-        wget --progress=bar:force:noscroll -O "$output" "$url"
+
+        # Try aria2c first (faster with multi-connection downloads)
+        if command -v aria2c &> /dev/null; then
+            echo "   Using aria2c (multi-connection download)..."
+            aria2c \
+                --console-log-level=warn \
+                --summary-interval=5 \
+                --max-connection-per-server=16 \
+                --split=16 \
+                --min-split-size=1M \
+                --max-concurrent-downloads=1 \
+                --continue=true \
+                --allow-overwrite=true \
+                --auto-file-renaming=false \
+                --out="$output" \
+                "$url" || {
+                    echo "   ⚠️  aria2c failed, falling back to wget..."
+                    wget --progress=dot:giga --show-progress -O "$output" "$url"
+                }
+        else
+            # Fallback to wget with improved progress display
+            echo "   Using wget (single-connection download)..."
+            wget --progress=dot:giga --show-progress -O "$output" "$url"
+        fi
+
         echo "✅ Downloaded $name"
     fi
 }
@@ -48,6 +72,8 @@ echo ""
 echo "========================================="
 echo "Downloading WAN 2.2 Models (~25GB)"
 echo "========================================="
+echo ""
+echo "Download method: $(command -v aria2c &> /dev/null && echo 'aria2c (fast, multi-connection)' || echo 'wget (standard)')"
 echo ""
 
 # Diffusion Models (14B fp16 models - ~27GB each)

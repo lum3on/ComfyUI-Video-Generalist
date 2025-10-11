@@ -62,7 +62,7 @@ uv pip install --no-cache \
     scipy
 
 echo "==================================================================="
-echo "⚡⚡⚡ SAGEATTENTION BUILD STARTING ⚡⚡⚡"
+echo "⚡⚡⚡ SAGEATTENTION2++ BUILD STARTING ⚡⚡⚡"
 echo "==================================================================="
 echo "📦 Installing SageAttention dependencies (wheel, setuptools, ninja, triton)..."
 uv pip install --no-cache \
@@ -74,16 +74,25 @@ uv pip install --no-cache \
 
 echo ""
 echo "==================================================================="
-echo "🚀🚀🚀 BUILDING SAGEATTENTION2 - THIS MAY TAKE A FEW MINUTES 🚀🚀🚀"
+echo "🚀🚀🚀 BUILDING SAGEATTENTION2++ FROM SOURCE 🚀🚀🚀"
 echo "==================================================================="
-echo "⏳ Compiling CUDA kernels for optimal performance..."
-echo "💡 Watch for compilation messages below..."
+echo "⏳ Cloning SageAttention repository..."
+cd /tmp
+git clone https://github.com/thu-ml/SageAttention.git
+cd SageAttention
+
+echo "⏳ Compiling CUDA kernels with parallel build..."
+echo "💡 This may take 5-10 minutes depending on GPU availability..."
 echo "-------------------------------------------------------------------"
-uv pip install --no-cache sageattention
+EXT_PARALLEL=4 NVCC_APPEND_FLAGS="--threads 8" MAX_JOBS=32 python setup.py install
 echo "-------------------------------------------------------------------"
-echo "✅✅✅ SAGEATTENTION2 BUILD COMPLETE ✅✅✅"
+echo "✅✅✅ SAGEATTENTION2++ BUILD COMPLETE ✅✅✅"
 echo "==================================================================="
 echo ""
+
+# Clean up build artifacts
+cd /
+rm -rf /tmp/SageAttention
 
 echo "📓 Installing JupyterLab..."
 uv pip install --no-cache \
