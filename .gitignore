@@ -1,0 +1,124 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+
+# Build artifacts
+*.tar
+*.tar.gz
+*.zip
+
+# Model files (too large for git)
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# ComfyUI specific
+ComfyUI/models/
+ComfyUI/output/
+ComfyUI/input/
+ComfyUI/temp/
+ComfyUI/custom_nodes/*/
+
+# Temporary directories
+*-temp/
+temp/
+tmp/
+
+# GitHub Actions
+.github/workflows/*.log
+
+# Node modules (if any)
+node_modules/
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Secrets and credentials
+*.pem
+*.key
+secrets.yaml
+credentials.json
+
+# RunPod specific
+.runpod/
+
