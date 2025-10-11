@@ -1,10 +1,13 @@
 # WAN 2.2 RunPod Compute Template
 
+![Docker Build](https://github.com/lum3on/wan2.2_runpod-temp/actions/workflows/docker-build.yml/badge.svg)
+
 A custom RunPod **COMPUTE** Docker template for WAN 2.2 video generation with CUDA 12.8, PyTorch 2.8, ComfyUI, ComfyUI Manager, WAN Video Wrapper, and JupyterLab.
 
 **Template Type:** Compute (not serverless)
 **ComfyUI:** Port 8188 (directly accessible)
 **JupyterLab:** Port 8189 (full backend access)
+**Auto-built:** Every push triggers automatic Docker build and GHCR deployment
 
 ## 🎯 Features
 
@@ -46,12 +49,34 @@ All models are downloaded during Docker build:
 
 ## 🚀 Quick Start
 
-### Option 1: Build Locally
+### Automated Builds (Recommended)
+
+**Every push to this repository automatically builds and publishes the Docker image to GHCR!**
+
+- **Image URL:** `ghcr.io/lum3on/wan22-runpod:latest`
+- **Build Status:** Check the badge above
+- **No manual builds needed** - Just push your changes and the image updates automatically
+
+### Option 1: Use Pre-built Image (Recommended)
+
+The image is automatically built and available on GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/lum3on/wan22-runpod:latest
+
+# Run locally for testing
+docker run -d --gpus all \
+  -p 8188:8188 -p 8189:8189 \
+  ghcr.io/lum3on/wan22-runpod:latest
+```
+
+### Option 2: Build Locally (For Development)
 
 ```bash
 # Clone this repository
-git clone <your-repo-url>
-cd Wan2.2_runpod
+git clone https://github.com/lum3on/wan2.2_runpod-temp.git
+cd wan2.2_runpod-temp
 
 # Build the Docker image
 docker build -f Dockerfile.wan22 -t wan22-runpod:latest .
@@ -60,7 +85,7 @@ docker build -f Dockerfile.wan22 -t wan22-runpod:latest .
 docker-compose -f docker-compose.wan22.yml up -d
 ```
 
-### Option 2: Deploy to RunPod (Compute Pod)
+### Option 3: Deploy to RunPod (Compute Pod)
 
 **Public Image Available:** `ghcr.io/lum3on/wan22-runpod:latest`
 
@@ -178,7 +203,49 @@ All models are sourced from:
 |----------|---------|-------------|
 | `COMFY_LOG_LEVEL` | `DEBUG` | ComfyUI logging level (DEBUG, INFO, WARNING, ERROR) |
 
+## 🔄 CI/CD Automation
+
+This repository uses **GitHub Actions** for automated Docker builds and deployment:
+
+### How It Works
+
+1. **Automatic Builds**: Every push to `master` branch triggers a Docker build
+2. **GHCR Push**: Successfully built images are automatically pushed to GitHub Container Registry
+3. **Build Caching**: GitHub Actions cache speeds up subsequent builds by 50%+
+4. **Multiple Tags**: Images are tagged with:
+   - `latest` (for main branch)
+   - Git SHA (for traceability)
+   - Version tags (if you push `v*.*.*` tags)
+
+### Workflow File
+
+See [`.github/workflows/docker-build.yml`](.github/workflows/docker-build.yml) for the complete workflow configuration.
+
+### Manual Trigger
+
+You can also manually trigger a build:
+1. Go to [Actions tab](https://github.com/lum3on/wan2.2_runpod-temp/actions)
+2. Select "Build and Push Docker Image to GHCR"
+3. Click "Run workflow"
+4. Optionally specify a custom tag
+
+### Build Status
+
+Check the build status badge at the top of this README or visit the [Actions page](https://github.com/lum3on/wan2.2_runpod-temp/actions).
+
 ## 🐛 Troubleshooting
+
+### CI/CD Issues
+
+**Build failing in GitHub Actions:**
+- Check the [Actions tab](https://github.com/lum3on/wan2.2_runpod-temp/actions) for error logs
+- Verify Dockerfile syntax is correct
+- Ensure all required files are committed
+
+**Image not appearing in GHCR:**
+- Verify GitHub Actions has package write permissions
+- Check that the workflow completed successfully
+- Visit [Packages](https://github.com/lum3on?tab=packages) to see published images
 
 ### ComfyUI not starting
 - Check logs: `docker logs wan22-comfyui`
