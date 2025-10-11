@@ -6,8 +6,8 @@
 # ============================================================================
 # Stage 1: Base image with CUDA 12.8.1 and ComfyUI
 # ============================================================================
-# Using runtime image (smaller) since we're using pre-built SageAttention2 wheel
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04 AS base
+# Using devel image (includes nvcc) for SageAttention2++ compilation at runtime
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04 AS base
 
 # Build arguments
 ARG COMFYUI_VERSION=v0.3.55
