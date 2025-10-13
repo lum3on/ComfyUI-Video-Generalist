@@ -112,6 +112,26 @@ echo "🌐 Access URL: http://<your-pod-ip>:8189"\n\
 echo "🔓 Authentication: Disabled (no token/password required)"\n\
 echo "-------------------------------------------------------------------"\n\
 \n\
+# Verify /comfyui exists and is writable before starting JupyterLab\n\
+echo "🔍 Verifying /comfyui directory..."\n\
+if [ ! -d "/comfyui" ]; then\n\
+    echo "❌ ERROR: /comfyui directory does not exist!"\n\
+    exit 1\n\
+fi\n\
+\n\
+# Test write permissions\n\
+if touch /comfyui/.write_test 2>/dev/null; then\n\
+    echo "✅ /comfyui is writable"\n\
+    rm -f /comfyui/.write_test\n\
+else\n\
+    echo "❌ ERROR: /comfyui is NOT writable!"\n\
+    echo "   Checking mount info:"\n\
+    mount | grep comfyui || mount | grep " / "\n\
+    echo "   Directory permissions:"\n\
+    ls -ld /comfyui\n\
+    exit 1\n\
+fi\n\
+\n\
 # Start JupyterLab in the background on port 8189\n\
 jupyter lab --config=/root/.jupyter/jupyter_lab_config.py > /var/log/jupyter.log 2>&1 &\n\
 JUPYTER_PID=$!\n\
@@ -121,8 +141,10 @@ sleep 2\n\
 if ps -p $JUPYTER_PID > /dev/null; then\n\
     echo "✅ JupyterLab started successfully (PID: $JUPYTER_PID)"\n\
     echo "📋 Logs available at: /var/log/jupyter.log"\n\
+    echo "📋 To view logs: cat /var/log/jupyter.log"\n\
 else\n\
-    echo "⚠️  JupyterLab may have failed to start - check /var/log/jupyter.log"\n\
+    echo "⚠️  JupyterLab may have failed to start - showing logs:"\n\
+    cat /var/log/jupyter.log\n\
 fi\n\
 echo "==================================================================="\n\
 echo ""\n\
