@@ -220,6 +220,8 @@ c.ServerApp.open_browser = False
 c.ServerApp.token = ''
 c.ServerApp.password = ''
 c.ServerApp.root_dir = '/comfyui'
+c.FileContentsManager.delete_to_trash = False
+c.ContentsManager.allow_hidden = True
 EOF
 
 # Clean up
@@ -229,9 +231,13 @@ rm -rf /root/.cache/uv
 rm -rf /tmp/*
 
 # Set proper permissions for JupyterLab file uploads and folder creation
+# Using 777 to ensure full write access for all operations
 echo "🔐 Setting permissions for JupyterLab..."
-chmod -R 755 /comfyui
+chmod -R 777 /comfyui
 chown -R root:root /comfyui
+
+# Ensure the .initialized marker is writable
+chmod 666 /comfyui/.initialized 2>/dev/null || true
 
 # Mark as initialized
 touch /comfyui/.initialized

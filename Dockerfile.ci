@@ -99,6 +99,11 @@ echo "Starting services..."\n\
 echo "Checking for WAN 2.2 models..."\n\
 /scripts/download_models.sh\n\
 \n\
+# Ensure /comfyui has proper permissions for JupyterLab file operations\n\
+echo "🔐 Ensuring /comfyui permissions for JupyterLab..."\n\
+chmod -R 777 /comfyui\n\
+chown -R root:root /comfyui\n\
+\n\
 echo "==================================================================="\n\
 echo "🚀 STARTING JUPYTERLAB ON PORT 8189"\n\
 echo "==================================================================="\n\
