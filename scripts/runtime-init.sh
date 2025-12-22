@@ -45,6 +45,17 @@ if [ ! -d "ComfyUI-Manager" ]; then
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git
 fi
 
+# Configure ComfyUI-Manager with security_level=weak to bypass version checks
+# This prevents the annoying "ComfyUI version is outdated" security block message
+echo "⚙️  Configuring ComfyUI-Manager (security_level=weak)..."
+MANAGER_CONFIG_DIR="/comfyui/user/__manager"
+mkdir -p "$MANAGER_CONFIG_DIR"
+cat > "$MANAGER_CONFIG_DIR/config.ini" << 'MANAGEREOF'
+[default]
+security_level = weak
+MANAGEREOF
+echo "   ✅ ComfyUI-Manager config created at $MANAGER_CONFIG_DIR/config.ini"
+
 # Install WAN Video Wrapper
 if [ ! -d "ComfyUI-WanVideoWrapper" ]; then
     echo "Installing ComfyUI-WanVideoWrapper..."

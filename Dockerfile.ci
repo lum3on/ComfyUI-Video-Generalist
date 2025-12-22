@@ -82,85 +82,67 @@ COPY scripts/runtime-init.sh /scripts/runtime-init.sh
 RUN chmod +x /scripts/runtime-init.sh
 
 # Create custom start script that runs runtime-init then starts services
+# OPTIMIZED: JupyterLab starts IMMEDIATELY after init, BEFORE model downloads
+# This allows users to access JupyterLab to download additional models while WAN models are loading
 RUN printf '#!/usr/bin/env bash\n\
 \n\
-echo "WAN 2.2 RunPod Template - Starting initialization..."\n\
+echo ""\n\
+echo "╔═══════════════════════════════════════════════════════════════════╗"\n\
+echo "║           WAN 2.2 RunPod Template - Starting Up                   ║"\n\
+echo "╚═══════════════════════════════════════════════════════════════════╝"\n\
+echo ""\n\
 \n\
-# Run runtime initialization (ComfyUI, PyTorch, custom nodes)\n\
+# Run runtime initialization (ComfyUI, PyTorch, custom nodes, SageAttention)\n\
 /scripts/runtime-init.sh\n\
 \n\
 # Use libtcmalloc for better memory management\n\
 TCMALLOC="$(ldconfig -p | grep -Po "libtcmalloc.so.\\d" | head -n 1)"\n\
 export LD_PRELOAD="${TCMALLOC}"\n\
 \n\
-echo "Starting services..."\n\
-\n\
-# Download models on first run (uses persistent /workspace if available)\n\
-echo "Checking for WAN 2.2 models..."\n\
-/scripts/download_models.sh\n\
-\n\
-# Ensure /comfyui has proper permissions for JupyterLab file operations\n\
-echo "🔐 Ensuring /comfyui permissions for JupyterLab..."\n\
+# Ensure /comfyui has proper permissions\n\
 chmod -R 777 /comfyui\n\
 chown -R root:root /comfyui\n\
 \n\
-echo "==================================================================="\n\
-echo "🚀 STARTING JUPYTERLAB ON PORT 8189"\n\
-echo "==================================================================="\n\
-echo "📂 Root directory: /comfyui"\n\
-echo "🌐 Access URL: http://<your-pod-ip>:8189"\n\
-echo "🔓 Authentication: Disabled (no token/password required)"\n\
-echo "-------------------------------------------------------------------"\n\
+echo ""\n\
+echo "╔═══════════════════════════════════════════════════════════════════╗"\n\
+echo "║  🚀 JUPYTERLAB STARTING (Port 8189) - Available NOW!              ║"\n\
+echo "╚═══════════════════════════════════════════════════════════════════╝"\n\
+echo "   📂 Root: /comfyui"\n\
+echo "   🔓 Auth: Disabled (no token required)"\n\
+echo "   💡 Use JupyterLab to download additional models while WAN loads!"\n\
+echo ""\n\
 \n\
-# Verify /comfyui exists and is writable before starting JupyterLab\n\
-echo "🔍 Verifying /comfyui directory..."\n\
-if [ ! -d "/comfyui" ]; then\n\
-    echo "❌ ERROR: /comfyui directory does not exist!"\n\
-    exit 1\n\
-fi\n\
-\n\
-# Test write permissions\n\
-if touch /comfyui/.write_test 2>/dev/null; then\n\
-    echo "✅ /comfyui is writable"\n\
-    rm -f /comfyui/.write_test\n\
-else\n\
-    echo "❌ ERROR: /comfyui is NOT writable!"\n\
-    echo "   Checking mount info:"\n\
-    mount | grep comfyui || mount | grep " / "\n\
-    echo "   Directory permissions:"\n\
-    ls -ld /comfyui\n\
-    exit 1\n\
-fi\n\
-\n\
-# Start JupyterLab in the background on port 8189\n\
+# Start JupyterLab IMMEDIATELY (before model downloads)\n\
 jupyter lab --config=/root/.jupyter/jupyter_lab_config.py > /var/log/jupyter.log 2>&1 &\n\
 JUPYTER_PID=$!\n\
-\n\
-# Wait a moment and verify JupyterLab started\n\
-sleep 2\n\
-if ps -p $JUPYTER_PID > /dev/null; then\n\
-    echo "✅ JupyterLab started successfully (PID: $JUPYTER_PID)"\n\
-    echo "📋 Logs available at: /var/log/jupyter.log"\n\
-    echo "📋 To view logs: cat /var/log/jupyter.log"\n\
+sleep 1\n\
+if ps -p $JUPYTER_PID > /dev/null 2>&1; then\n\
+    echo "   ✅ JupyterLab running (PID: $JUPYTER_PID)"\n\
 else\n\
-    echo "⚠️  JupyterLab may have failed to start - showing logs:"\n\
-    cat /var/log/jupyter.log\n\
+    echo "   ⚠️  JupyterLab may have issues - check /var/log/jupyter.log"\n\
 fi\n\
-echo "==================================================================="\n\
+echo ""\n\
+\n\
+# Download models in background - JupyterLab is already accessible!\n\
+echo "╔═══════════════════════════════════════════════════════════════════╗"\n\
+echo "║  📦 MODEL DOWNLOAD STARTING (Background)                          ║"\n\
+echo "╚═══════════════════════════════════════════════════════════════════╝"\n\
+echo "   💡 JupyterLab is accessible NOW while models download!"\n\
+echo ""\n\
+/scripts/download_models.sh\n\
 echo ""\n\
 \n\
 # Allow operators to tweak verbosity; default is DEBUG\n\
 : "${COMFY_LOG_LEVEL:=DEBUG}"\n\
 \n\
-echo "==================================================================="\n\
-echo "🎨 STARTING COMFYUI ON PORT 8188 WITH SAGEATTENTION"\n\
-echo "==================================================================="\n\
-echo "🌐 Access URL: http://<your-pod-ip>:8188"\n\
-echo "⚡ SageAttention: ENABLED (--use-sage-attention)"\n\
-echo "📊 Log Level: ${COMFY_LOG_LEVEL}"\n\
-echo "-------------------------------------------------------------------"\n\
+echo "╔═══════════════════════════════════════════════════════════════════╗"\n\
+echo "║  🎨 COMFYUI STARTING (Port 8188) + SageAttention                  ║"\n\
+echo "╚═══════════════════════════════════════════════════════════════════╝"\n\
+echo "   ⚡ SageAttention: ENABLED"\n\
+echo "   📊 Log Level: ${COMFY_LOG_LEVEL}"\n\
+echo ""\n\
 \n\
-# Start ComfyUI with --listen 0.0.0.0 to accept external connections\n\
+# Start ComfyUI\n\
 python -u /comfyui/main.py \\\n\
     --disable-auto-launch \\\n\
     --disable-metadata \\\n\
