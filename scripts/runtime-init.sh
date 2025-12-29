@@ -10,55 +10,91 @@ echo "WAN 2.2 Runtime Initialization"
 echo "==================================================================="
 
 # Check if already initialized (for persistent storage)
+ALREADY_INITIALIZED=false
 if [ -f "/comfyui/.initialized" ]; then
-    echo "✅ Already initialized - skipping setup"
-    exit 0
+    echo "✅ Main initialization already done - checking ComfyUI-Manager version..."
+    ALREADY_INITIALIZED=true
 fi
 
-echo "📦 Installing ComfyUI ${COMFYUI_VERSION:-v0.3.55}..."
-cd /
-/usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION:-v0.3.55}" --nvidia
+if [ "$ALREADY_INITIALIZED" = false ]; then
+    echo "📦 Installing ComfyUI ${COMFYUI_VERSION:-v0.3.55}..."
+    cd /
+    /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION:-v0.3.55}" --nvidia
+fi
 
 # Copy extra_model_paths.yaml for network volume support
-if [ -f "/etc/extra_model_paths.yaml" ]; then
+if [ -f "/etc/extra_model_paths.yaml" ] && [ ! -f "/comfyui/extra_model_paths.yaml" ]; then
     echo "📋 Copying extra_model_paths.yaml for network volume support..."
     cp /etc/extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 fi
 
-# Install PyTorch 2.7.1 with CUDA 12.8 support (pinned version for stability)
-# Note: Latest PyTorch (2.9.x) may have compatibility issues with some custom nodes
-echo "🔥 Installing PyTorch 2.7.1 with CUDA 12.8 support..."
-pip install --no-cache-dir \
-    torch==2.7.1+cu128 \
-    torchvision==0.22.1+cu128 \
-    torchaudio==2.7.1+cu128 \
-    --index-url https://download.pytorch.org/whl/cu128
+# Only install PyTorch and dependencies on first init
+if [ "$ALREADY_INITIALIZED" = false ]; then
+    # Install PyTorch 2.7.1 with CUDA 12.8 support (pinned version for stability)
+    # Note: Latest PyTorch (2.9.x) may have compatibility issues with some custom nodes
+    echo "🔥 Installing PyTorch 2.7.1 with CUDA 12.8 support..."
+    pip install --no-cache-dir \
+        torch==2.7.1+cu128 \
+        torchvision==0.22.1+cu128 \
+        torchaudio==2.7.1+cu128 \
+        --index-url https://download.pytorch.org/whl/cu128
 
-echo "⚡ Installing HuggingFace CLI for fast model downloads..."
-uv pip install --no-cache huggingface-hub[cli,hf_transfer]
+    echo "⚡ Installing HuggingFace CLI for fast model downloads..."
+    uv pip install --no-cache huggingface-hub[cli,hf_transfer]
+fi
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
-echo "🧩 Installing custom nodes..."
+# ============================================================================
+# ComfyUI-Manager Installation - ALWAYS runs to ensure correct version
+# ============================================================================
+# CRITICAL: ComfyUI-Manager v3.38+ requires ComfyUI v0.3.76+ and will block
+# ALL operations with "ComfyUI version is outdated!" error on older versions.
+# We MUST use v3.37.1 (last version before the v3.38 security migration).
+# This section runs EVERY startup to fix any incorrect Manager versions.
+# ============================================================================
+
+echo "🧩 Checking ComfyUI-Manager version..."
 cd /comfyui/custom_nodes
 
-# Install ComfyUI Manager (pinned to v3.37.1 - last version before v3.38 security migration)
-# v3.38+ requires ComfyUI v0.3.76+ which we don't use
-# FORCE reinstall to ensure correct version (removes any existing installation)
 MANAGER_VERSION="3.37.1"
+MANAGER_NEEDS_INSTALL=false
+
+# Check if Manager exists and verify version
 if [ -d "ComfyUI-Manager" ]; then
-    echo "Removing existing ComfyUI-Manager to ensure correct version..."
+    # Check the version in manager_core.py
+    if [ -f "ComfyUI-Manager/glob/manager_core.py" ]; then
+        INSTALLED_VERSION=$(grep -oP "version_code = \[\K[0-9, ]+" ComfyUI-Manager/glob/manager_core.py 2>/dev/null | tr -d ' ' || echo "")
+        if [ "$INSTALLED_VERSION" = "3,37,1" ]; then
+            echo "   ✅ ComfyUI-Manager v${MANAGER_VERSION} already installed correctly"
+        else
+            echo "   ⚠️  Wrong version detected: $INSTALLED_VERSION - reinstalling v${MANAGER_VERSION}..."
+            MANAGER_NEEDS_INSTALL=true
+        fi
+    else
+        echo "   ⚠️  Manager found but version file missing - reinstalling..."
+        MANAGER_NEEDS_INSTALL=true
+    fi
+else
+    echo "   📦 ComfyUI-Manager not found - installing..."
+    MANAGER_NEEDS_INSTALL=true
+fi
+
+if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
+    # Remove any existing installation
     rm -rf ComfyUI-Manager
-fi
-echo "Installing ComfyUI-Manager v${MANAGER_VERSION}..."
-git clone --branch ${MANAGER_VERSION} --depth 1 https://github.com/ltdrdata/ComfyUI-Manager.git
 
-# Install ComfyUI-Manager dependencies
-echo "📦 Installing ComfyUI-Manager dependencies..."
-if [ -f "ComfyUI-Manager/requirements.txt" ]; then
-    pip install -r ComfyUI-Manager/requirements.txt
+    echo "Installing ComfyUI-Manager v${MANAGER_VERSION} from Comfy-Org..."
+    # Use the new official Comfy-Org repository (ltdrdata repo redirects here)
+    git clone --branch ${MANAGER_VERSION} --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
+
+    # Install dependencies
+    echo "📦 Installing ComfyUI-Manager dependencies..."
+    if [ -f "ComfyUI-Manager/requirements.txt" ]; then
+        pip install -r ComfyUI-Manager/requirements.txt
+    fi
 fi
 
-# Configure ComfyUI-Manager with security_level=weak
+# ALWAYS configure ComfyUI-Manager with security_level=weak (runs every startup)
 # This is required for ComfyUI-Manager v3.37.1 with ComfyUI v0.3.55
 echo "⚙️  Configuring ComfyUI-Manager (security_level=weak)..."
 
@@ -78,6 +114,16 @@ cat > "/comfyui/user/default/ComfyUI-Manager/config.ini" << 'MANAGEREOF'
 security_level = weak
 MANAGEREOF
 echo "   ✅ ComfyUI-Manager config also created at /comfyui/user/default/ComfyUI-Manager/config.ini"
+
+# Skip the rest if already initialized
+if [ "$ALREADY_INITIALIZED" = true ]; then
+    echo "==================================================================="
+    echo "✅ ComfyUI-Manager verified/fixed - skipping remaining setup"
+    echo "==================================================================="
+    exit 0
+fi
+
+echo "🧩 Installing other custom nodes..."
 
 # Install WAN Video Wrapper (pinned to v1.3.0 - commit d9def84332e50af26ec5cde080d4c3703b837520)
 # This version is tested and stable with our ComfyUI setup
