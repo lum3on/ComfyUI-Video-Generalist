@@ -25,11 +25,13 @@ if [ -f "/etc/extra_model_paths.yaml" ]; then
     cp /etc/extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 fi
 
-echo "🔥 Installing PyTorch with CUDA 12.8 support..."
-pip install --no-cache-dir --upgrade \
-    torch \
-    torchvision \
-    torchaudio \
+# Install PyTorch 2.7.1 with CUDA 12.8 support (pinned version for stability)
+# Note: Latest PyTorch (2.9.x) may have compatibility issues with some custom nodes
+echo "🔥 Installing PyTorch 2.7.1 with CUDA 12.8 support..."
+pip install --no-cache-dir \
+    torch==2.7.1+cu128 \
+    torchvision==0.22.1+cu128 \
+    torchaudio==2.7.1+cu128 \
     --index-url https://download.pytorch.org/whl/cu128
 
 echo "⚡ Installing HuggingFace CLI for fast model downloads..."
@@ -73,10 +75,14 @@ security_level = weak
 MANAGEREOF
 echo "   ✅ ComfyUI-Manager config also created at /comfyui/user/default/ComfyUI-Manager/config.ini"
 
-# Install WAN Video Wrapper (pinned to v1.3.0 for compatibility)
+# Install WAN Video Wrapper (pinned to v1.3.0 - commit d9def84332e50af26ec5cde080d4c3703b837520)
+# This version is tested and stable with our ComfyUI setup
 if [ ! -d "ComfyUI-WanVideoWrapper" ]; then
     echo "Installing ComfyUI-WanVideoWrapper v1.3.0..."
-    git clone --branch v1.3.0 --depth 1 https://github.com/kijai/ComfyUI-WanVideoWrapper.git
+    git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
+    cd ComfyUI-WanVideoWrapper
+    git checkout d9def84332e50af26ec5cde080d4c3703b837520
+    cd ..
 fi
 
 # Install ComfyUI-KJNodes
@@ -191,23 +197,21 @@ echo "✅ Custom nodes and dependencies installed!"
 echo "==================================================================="
 echo "⚡ SageAttention2++ Installation Starting"
 echo "==================================================================="
-echo "📦 Installing SageAttention dependencies (triton, packaging)..."
+echo "📦 Installing SageAttention dependencies..."
 echo ""
 
 # SageAttention REQUIRES triton to work properly!
 # Without triton, SageAttention will fail silently and output noise
-echo "🔧 Installing triton (required for SageAttention)..."
-uv pip install --no-cache triton packaging
-
-echo ""
-echo "📦 Installing prebuilt SageAttention wheel for Python 3.12 (Linux x86_64)..."
-echo ""
-
-# Install the prebuilt wheel from HuggingFace (Kijai's precompiled wheels)
-# This avoids compilation issues and works on all CUDA versions
+# Using prebuilt Triton wheel from Kijai for better compatibility with PyTorch 2.7
+TRITON_WHEEL_URL="https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/triton-3.3.0-cp312-cp312-linux_x86_64.whl"
 SAGEATTENTION_WHEEL_URL="https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl"
 
-echo "🚀 Downloading and installing SageAttention from prebuilt wheel..."
+echo "� Installing Triton 3.3.0 from prebuilt wheel (required for SageAttention)..."
+echo "   URL: $TRITON_WHEEL_URL"
+uv pip install --no-cache packaging "$TRITON_WHEEL_URL"
+
+echo ""
+echo "📦 Installing SageAttention 2.2.0 from prebuilt wheel..."
 echo "   URL: $SAGEATTENTION_WHEEL_URL"
 echo ""
 
