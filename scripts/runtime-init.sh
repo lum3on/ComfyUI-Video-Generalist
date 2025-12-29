@@ -39,10 +39,11 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 echo "🧩 Installing custom nodes..."
 cd /comfyui/custom_nodes
 
-# Install ComfyUI Manager
+# Install ComfyUI Manager (pinned to v3.37.1 - last version before v3.38 security migration)
+# v3.38+ requires ComfyUI v0.3.76+ which we don't use
 if [ ! -d "ComfyUI-Manager" ]; then
-    echo "Installing ComfyUI-Manager..."
-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git
+    echo "Installing ComfyUI-Manager v3.37.1..."
+    git clone --branch 3.37.1 --depth 1 https://github.com/ltdrdata/ComfyUI-Manager.git
 fi
 
 # Install ComfyUI-Manager dependencies
@@ -51,40 +52,31 @@ if [ -f "ComfyUI-Manager/requirements.txt" ]; then
     pip install -r ComfyUI-Manager/requirements.txt
 fi
 
-# Configure ComfyUI-Manager with security_level=weak to bypass version checks
-# This prevents the annoying "ComfyUI version is outdated" security block message
+# Configure ComfyUI-Manager with security_level=weak
+# This is required for ComfyUI-Manager v3.37.1 with ComfyUI v0.3.55
 echo "⚙️  Configuring ComfyUI-Manager (security_level=weak)..."
 
 # Create config in multiple locations to ensure it works
-# Location 1: /comfyui/user/__manager (standard location)
-MANAGER_CONFIG_DIR="/comfyui/user/__manager"
-mkdir -p "$MANAGER_CONFIG_DIR"
-cat > "$MANAGER_CONFIG_DIR/config.ini" << 'MANAGEREOF'
-[default]
-security_level = weak
-MANAGEREOF
-echo "   ✅ ComfyUI-Manager config created at $MANAGER_CONFIG_DIR/config.ini"
-
-# Location 2: Inside ComfyUI-Manager custom node directory
+# Location 1: Inside ComfyUI-Manager custom node directory (v3.37.1 location)
 MANAGER_NODE_CONFIG="/comfyui/custom_nodes/ComfyUI-Manager/config.ini"
 cat > "$MANAGER_NODE_CONFIG" << 'MANAGEREOF'
 [default]
 security_level = weak
 MANAGEREOF
-echo "   ✅ ComfyUI-Manager config also created at $MANAGER_NODE_CONFIG"
+echo "   ✅ ComfyUI-Manager config created at $MANAGER_NODE_CONFIG"
 
-# Location 3: ComfyUI root config directory
-mkdir -p "/comfyui/user/default"
-cat > "/comfyui/user/default/comfy-manager.ini" << 'MANAGEREOF'
+# Location 2: ComfyUI user config directory (legacy location)
+mkdir -p "/comfyui/user/default/ComfyUI-Manager"
+cat > "/comfyui/user/default/ComfyUI-Manager/config.ini" << 'MANAGEREOF'
 [default]
 security_level = weak
 MANAGEREOF
-echo "   ✅ ComfyUI-Manager config also created at /comfyui/user/default/comfy-manager.ini"
+echo "   ✅ ComfyUI-Manager config also created at /comfyui/user/default/ComfyUI-Manager/config.ini"
 
-# Install WAN Video Wrapper
+# Install WAN Video Wrapper (pinned to v1.3.0 for compatibility)
 if [ ! -d "ComfyUI-WanVideoWrapper" ]; then
-    echo "Installing ComfyUI-WanVideoWrapper..."
-    git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
+    echo "Installing ComfyUI-WanVideoWrapper v1.3.0..."
+    git clone --branch v1.3.0 --depth 1 https://github.com/kijai/ComfyUI-WanVideoWrapper.git
 fi
 
 # Install ComfyUI-KJNodes
