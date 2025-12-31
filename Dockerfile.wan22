@@ -95,6 +95,10 @@ WORKDIR /comfyui/custom_nodes
 RUN rm -rf ComfyUI-Manager && \
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git
 
+# Install ComfyUI Custom Scripts (remove if exists to ensure fresh clone)
+RUN rm -rf ComfyUI-Custom-Scripts && \
+    git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git
+
 # Install WAN Video Wrapper (remove if exists to ensure fresh clone)
 RUN rm -rf ComfyUI-WanVideoWrapper && \
     git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
