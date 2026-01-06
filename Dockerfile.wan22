@@ -103,6 +103,10 @@ RUN rm -rf ComfyUI-Custom-Scripts && \
 RUN rm -rf ComfyUI-WanVideoWrapper && \
     git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
 
+# Install ComfyUI-MatAnyone (remove if exists to ensure fresh clone)
+RUN rm -rf ComfyUI-MatAnyone && \
+    git clone https://github.com/FuouM/ComfyUI-MatAnyone.git
+
 # Install WAN Video Wrapper dependencies and clean up
 RUN uv pip install --no-cache \
     ftfy \
@@ -116,6 +120,12 @@ RUN uv pip install --no-cache \
     gguf>=0.17.1 \
     opencv-python \
     scipy \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /tmp/*
+
+# Install ComfyUI-MatAnyone dependencies and clean up
+RUN uv pip install --no-cache \
+    omegaconf \
     && rm -rf /root/.cache/uv \
     && rm -rf /tmp/*
 

@@ -43,7 +43,8 @@ mkdir -p \
     "$MODEL_DIR/mmdets" \
     "$MODEL_DIR/instantid" \
     "$MODEL_DIR/text_encoders" \
-    "$MODEL_DIR/diffusion_models"
+    "$MODEL_DIR/diffusion_models" \
+    "$MODEL_DIR/detection"
 
 # Symlink to ComfyUI models directory if using /workspace
 if [ "$MODEL_DIR" != "/comfyui/models" ]; then
@@ -285,7 +286,7 @@ echo "╔═══════════════════════�
 echo "║                                                                       ║"
 echo "║           🎬 WAN 2.2 Model Download Manager 🎬                        ║"
 echo "║                                                                       ║"
-echo "║  Total Download Size: ~80GB                                          ║"
+echo "║  Total Download Size: ~147GB                                         ║"
 echo "║  Storage Location: $MODEL_DIR"
 echo "║                                                                       ║"
 echo "╚═══════════════════════════════════════════════════════════════════════╝"
@@ -300,45 +301,65 @@ fi
 echo "   ✅ Concurrent downloads: Up to 6 files simultaneously"
 echo ""
 echo "📋 Download Plan:"
-echo "   • Phase 1: Diffusion Models (2 files, ~54GB)"
-echo "   • Phase 2: CLIP, VAE, LoRAs (5 files, ~15GB)"
-echo "   • Phase 3: Upscale Models (5 files, ~5GB)"
+echo "   • Phase 1: Diffusion Models (6 files, ~120GB) - includes VACE, Animate, SCAIL"
+echo "   • Phase 2: CLIP, CLIP Vision, VAE, LoRAs (6 files, ~16GB)"
+echo "   • Phase 3: ControlNet Models (1 file, ~2GB)"
+echo "   • Phase 4: Detection Models (1 file, ~40MB)"
+echo "   • Phase 5: Upscale Models (5 files, ~5GB)"
+echo "   • Phase 6: MatAnyone Model (1 file, ~1.5GB)"
 echo ""
-echo "⏱️  Estimated time: 20-35 minutes (depending on network speed)"
+echo "⏱️  Estimated time: 45-65 minutes (depending on network speed)"
 echo ""
 
 # Phase 1: Diffusion Models
 echo "╔═══════════════════════════════════════════════════════════════════════╗"
-echo "║  PHASE 1/3: Diffusion Models (Core WAN 2.2 Models)                   ║"
-echo "║  Files: 2 | Size: ~54GB | Format: fp16                               ║"
+echo "║  PHASE 1/6: Diffusion Models (Core WAN 2.2 + VACE + Animate + SCAIL) ║"
+echo "║  Files: 6 | Size: ~120GB | Format: bf16/fp16                         ║"
 echo "╚═══════════════════════════════════════════════════════════════════════╝"
 
 download_parallel \
     "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors $MODEL_DIR/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors" \
-    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors $MODEL_DIR/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors"
-    # COMMENTED OUT - fp8_scaled versions (uncomment if needed):
-    # "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors $MODEL_DIR/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors" \
-    # "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors $MODEL_DIR/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors" \
-    # COMMENTED OUT - VACE modules (uncomment if needed):
-    # "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Fun/VACE/Wan2_2_Fun_VACE_module_A14B_HIGH_bf16.safetensors $MODEL_DIR/diffusion_models/Wan2_2_Fun_VACE_module_A14B_HIGH_bf16.safetensors" \
-    # "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Fun/VACE/Wan2_2_Fun_VACE_module_A14B_LOW_bf16.safetensors $MODEL_DIR/diffusion_models/Wan2_2_Fun_VACE_module_A14B_LOW_bf16.safetensors"
+    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors $MODEL_DIR/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors" \
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Fun/VACE/Wan2_2_Fun_VACE_module_A14B_HIGH_bf16.safetensors $MODEL_DIR/diffusion_models/Wan2_2_Fun_VACE_module_A14B_HIGH_bf16.safetensors" \
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Fun/VACE/Wan2_2_Fun_VACE_module_A14B_LOW_bf16.safetensors $MODEL_DIR/diffusion_models/Wan2_2_Fun_VACE_module_A14B_LOW_bf16.safetensors" \
+    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_animate_14B_bf16.safetensors $MODEL_DIR/diffusion_models/wan2.2_animate_14B_bf16.safetensors" \
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/SCAIL/Wan21-14B-SCAIL-preview_comfy_bf16.safetensors $MODEL_DIR/diffusion_models/Wan21-14B-SCAIL-preview_comfy_bf16.safetensors"
 
-# Phase 2: CLIP, VAE & LoRAs
+# Phase 2: CLIP, CLIP Vision, VAE & LoRAs
 echo "╔═══════════════════════════════════════════════════════════════════════╗"
-echo "║  PHASE 2/3: CLIP, VAE & LoRAs                                        ║"
-echo "║  Files: 5 | Size: ~15GB                                              ║"
+echo "║  PHASE 2/6: CLIP, CLIP Vision, VAE & LoRAs                           ║"
+echo "║  Files: 6 | Size: ~16GB                                              ║"
 echo "╚═══════════════════════════════════════════════════════════════════════╝"
 
 download_parallel \
     "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors $MODEL_DIR/clip/umt5_xxl_fp16.safetensors" \
+    "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors $MODEL_DIR/clip_vision/clip_vision_h.safetensors" \
     "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors $MODEL_DIR/vae/wan_2.1_vae.safetensors" \
     "https://huggingface.co/yo9otatara/model/resolve/main/Instareal_high.safetensors $MODEL_DIR/loras/Instareal_high.safetensors" \
     "https://huggingface.co/yo9otatara/model/resolve/main/Instareal_low.safetensors $MODEL_DIR/loras/Instareal_low.safetensors" \
     "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors $MODEL_DIR/loras/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors"
 
-# Phase 3: Upscale Models
+# Phase 3: ControlNet Models
 echo "╔═══════════════════════════════════════════════════════════════════════╗"
-echo "║  PHASE 3/3: Upscale Models                                           ║"
+echo "║  PHASE 3/6: ControlNet Models                                        ║"
+echo "║  Files: 1 | Size: ~2GB                                               ║"
+echo "╚═══════════════════════════════════════════════════════════════════════╝"
+
+download_parallel \
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan21_Uni3C_controlnet_fp16.safetensors $MODEL_DIR/controlnet/Wan21_Uni3C_controlnet_fp16.safetensors"
+
+# Phase 4: Detection Models
+echo "╔═══════════════════════════════════════════════════════════════════════╗"
+echo "║  PHASE 4/6: Detection Models                                         ║"
+echo "║  Files: 1 | Size: ~40MB                                              ║"
+echo "╚═══════════════════════════════════════════════════════════════════════╝"
+
+download_parallel \
+    "https://huggingface.co/Wan-AI/Wan2.2-Animate-14B/resolve/main/process_checkpoint/det/yolov10m.onnx $MODEL_DIR/detection/yolov10m.onnx"
+
+# Phase 5: Upscale Models
+echo "╔═══════════════════════════════════════════════════════════════════════╗"
+echo "║  PHASE 5/6: Upscale Models                                           ║"
 echo "║  Files: 5 | Size: ~5GB                                               ║"
 echo "╚═══════════════════════════════════════════════════════════════════════╝"
 
@@ -348,6 +369,19 @@ download_parallel \
     "https://huggingface.co/yo9otatara/model/resolve/main/1xSkinContrast-High-SuperUltraCompact.pth $MODEL_DIR/upscale_models/1xSkinContrast-High-SuperUltraCompact.pth" \
     "https://huggingface.co/yo9otatara/model/resolve/main/1xDeJPG_realplksr_otf.safetensors $MODEL_DIR/upscale_models/1xDeJPG_realplksr_otf.safetensors" \
     "https://huggingface.co/yo9otatara/model/resolve/main/4x-UltraSharpV2_Lite.pth $MODEL_DIR/upscale_models/4x-UltraSharpV2_Lite.pth"
+
+# Phase 6: MatAnyone Model (Custom Node Checkpoint)
+echo "╔═══════════════════════════════════════════════════════════════════════╗"
+echo "║  PHASE 6/6: MatAnyone Model                                          ║"
+echo "║  Files: 1 | Size: ~1.5GB                                             ║"
+echo "╚═══════════════════════════════════════════════════════════════════════╝"
+
+# Create MatAnyone checkpoint directory if it doesn't exist
+MATANYONE_DIR="/comfyui/custom_nodes/ComfyUI-MatAnyone/checkpoint"
+mkdir -p "$MATANYONE_DIR"
+
+download_parallel \
+    "https://github.com/pq-yang/MatAnyone/releases/download/v1.0.0/matanyone.pth $MATANYONE_DIR/matanyone.pth"
 
 # Final summary
 echo ""
