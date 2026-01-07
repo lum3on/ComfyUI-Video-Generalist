@@ -15,6 +15,7 @@ echo "========================================="
 # DOWNLOAD_ANIMATE=true      - Animate 14B model (~28GB)
 # DOWNLOAD_SCAIL=true        - SCAIL preview model (~28GB)
 # DOWNLOAD_LIGHTX=true       - LTX-2 models: checkpoint, upscalers, lora, text encoder (~50GB)
+# DOWNLOAD_LTX_LORAS=true    - LTX-2 LoRA pack: IC-LoRAs + Camera Control (~2GB)
 # DOWNLOAD_CLIP=true         - CLIP text encoder + vision (~12GB)
 # DOWNLOAD_VAE=true          - VAE model (~300MB)
 # DOWNLOAD_LORAS=true        - LoRA models (~3GB)
@@ -38,6 +39,7 @@ echo "========================================="
 : "${DOWNLOAD_ANIMATE:=$DOWNLOAD_ALL}"
 : "${DOWNLOAD_SCAIL:=$DOWNLOAD_ALL}"
 : "${DOWNLOAD_LIGHTX:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_LTX_LORAS:=$DOWNLOAD_ALL}"
 : "${DOWNLOAD_CLIP:=$DOWNLOAD_ALL}"
 : "${DOWNLOAD_VAE:=$DOWNLOAD_ALL}"
 : "${DOWNLOAD_LORAS:=$DOWNLOAD_ALL}"
@@ -72,6 +74,7 @@ echo "   DOWNLOAD_VACE=$DOWNLOAD_VACE         (VACE ~30GB)"
 echo "   DOWNLOAD_ANIMATE=$DOWNLOAD_ANIMATE      (Animate ~28GB)"
 echo "   DOWNLOAD_SCAIL=$DOWNLOAD_SCAIL        (SCAIL ~28GB)"
 echo "   DOWNLOAD_LIGHTX=$DOWNLOAD_LIGHTX       (LTX-2 ~50GB)"
+echo "   DOWNLOAD_LTX_LORAS=$DOWNLOAD_LTX_LORAS    (LTX-2 LoRAs ~2GB)"
 echo "   DOWNLOAD_CLIP=$DOWNLOAD_CLIP         (CLIP ~12GB)"
 echo "   DOWNLOAD_VAE=$DOWNLOAD_VAE          (VAE ~300MB)"
 echo "   DOWNLOAD_LORAS=$DOWNLOAD_LORAS        (LoRAs ~3GB)"
@@ -535,6 +538,29 @@ if [ "$DOWNLOAD_LIGHTX" = "true" ]; then
         "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it.safetensors $MODEL_DIR/text_encoders/gemma_3_12B_it.safetensors"
 else
     echo "   ⏭️  LTX-2 models SKIPPED (DOWNLOAD_LIGHTX=false)"
+fi
+
+# Phase 8: LTX-2 LoRA Pack (IC-LoRAs + Camera Control)
+echo "╔═══════════════════════════════════════════════════════════════════════╗"
+echo "║  PHASE 8: LTX-2 LoRA Pack                                            ║"
+echo "╚═══════════════════════════════════════════════════════════════════════╝"
+
+if [ "$DOWNLOAD_LTX_LORAS" = "true" ]; then
+    echo "   ✅ LTX-2 LoRA pack enabled"
+    download_parallel \
+        "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Canny-Control/resolve/main/ltx-2-19b-ic-lora-canny-control.safetensors $MODEL_DIR/loras/ltx-2-19b-ic-lora-canny-control.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Depth-Control/resolve/main/ltx-2-19b-ic-lora-depth-control.safetensors $MODEL_DIR/loras/ltx-2-19b-ic-lora-depth-control.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Detailer/resolve/main/ltx-2-19b-ic-lora-detailer.safetensors $MODEL_DIR/loras/ltx-2-19b-ic-lora-detailer.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-IC-LoRA-Pose-Control/resolve/main/ltx-2-19b-ic-lora-pose-control.safetensors $MODEL_DIR/loras/ltx-2-19b-ic-lora-pose-control.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-In/resolve/main/ltx-2-19b-lora-camera-control-dolly-in.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-dolly-in.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Left/resolve/main/ltx-2-19b-lora-camera-control-dolly-left.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-dolly-left.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Out/resolve/main/ltx-2-19b-lora-camera-control-dolly-out.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-dolly-out.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Right/resolve/main/ltx-2-19b-lora-camera-control-dolly-right.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-dolly-right.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Down/resolve/main/ltx-2-19b-lora-camera-control-jib-down.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-jib-down.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Jib-Up/resolve/main/ltx-2-19b-lora-camera-control-jib-up.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-jib-up.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Static/resolve/main/ltx-2-19b-lora-camera-control-static.safetensors $MODEL_DIR/loras/ltx-2-19b-lora-camera-control-static.safetensors"
+else
+    echo "   ⏭️  LTX-2 LoRA pack SKIPPED (DOWNLOAD_LTX_LORAS=false)"
 fi
 
 # Final summary
