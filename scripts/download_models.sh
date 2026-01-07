@@ -449,6 +449,8 @@ if [ "$DOWNLOAD_LORAS" = "true" ]; then
     PHASE2_DOWNLOADS+=("https://huggingface.co/yo9otatara/model/resolve/main/Instareal_high.safetensors $MODEL_DIR/loras/Instareal_high.safetensors")
     PHASE2_DOWNLOADS+=("https://huggingface.co/yo9otatara/model/resolve/main/Instareal_low.safetensors $MODEL_DIR/loras/Instareal_low.safetensors")
     PHASE2_DOWNLOADS+=("https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors $MODEL_DIR/loras/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors")
+    PHASE2_DOWNLOADS+=("https://huggingface.co/yo9otatara/model/resolve/main/f5_style2.1_000000400.safetensors $MODEL_DIR/loras/f5_style2.1_000000400.safetensors")
+    PHASE2_DOWNLOADS+=("https://huggingface.co/yo9otatara/model/resolve/main/WAN2.1_TheIncrediblesPixarStyle_v1_by-AI_Characters.safetensors $MODEL_DIR/loras/WAN2.1_TheIncrediblesPixarStyle_v1_by-AI_Characters.safetensors")
 else
     echo "   ⏭️  LoRA models SKIPPED (DOWNLOAD_LORAS=false)"
 fi
