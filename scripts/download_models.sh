@@ -25,25 +25,30 @@ echo "========================================="
 # DOWNLOAD_ALL=false         - Set to "false" to disable ALL downloads
 # ============================================================================
 
-# Default all flags to true if not set
+# DOWNLOAD_ALL defaults to true (downloads everything)
+# If DOWNLOAD_ALL=false, only explicitly enabled flags will download
 : "${DOWNLOAD_ALL:=true}"
-: "${DOWNLOAD_WAN_CORE:=true}"
-: "${DOWNLOAD_VACE:=true}"
-: "${DOWNLOAD_ANIMATE:=true}"
-: "${DOWNLOAD_SCAIL:=true}"
-: "${DOWNLOAD_CLIP:=true}"
-: "${DOWNLOAD_VAE:=true}"
-: "${DOWNLOAD_LORAS:=true}"
-: "${DOWNLOAD_CONTROLNET:=true}"
-: "${DOWNLOAD_DETECTION:=true}"
-: "${DOWNLOAD_UPSCALE:=true}"
-: "${DOWNLOAD_MATANYONE:=true}"
 
-# If DOWNLOAD_ALL is false, skip everything
-if [ "$DOWNLOAD_ALL" = "false" ]; then
-    echo "⚠️  DOWNLOAD_ALL=false - Skipping all model downloads"
-    echo "   Set individual flags or DOWNLOAD_ALL=true to enable downloads"
-    exit 0
+# Individual flags: default to DOWNLOAD_ALL value
+# This way: DOWNLOAD_ALL=false means nothing downloads unless explicitly set
+: "${DOWNLOAD_WAN_CORE:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_VACE:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_ANIMATE:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_SCAIL:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_CLIP:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_VAE:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_LORAS:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_CONTROLNET:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_DETECTION:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_UPSCALE:=$DOWNLOAD_ALL}"
+: "${DOWNLOAD_MATANYONE:=$DOWNLOAD_ALL}"
+
+# BUNDLE LOGIC: WAN_CORE includes essential dependencies
+# If WAN_CORE is enabled, also enable CLIP, VAE, and LoRAs (required for T2V)
+if [ "$DOWNLOAD_WAN_CORE" = "true" ]; then
+    DOWNLOAD_CLIP="true"
+    DOWNLOAD_VAE="true"
+    DOWNLOAD_LORAS="true"
 fi
 
 # Model storage directory (use RunPod's persistent /workspace if available)
