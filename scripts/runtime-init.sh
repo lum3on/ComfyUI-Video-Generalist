@@ -64,59 +64,103 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 # ============================================================================
 # ComfyUI-Manager Installation - ALWAYS runs to ensure correct version
 # ============================================================================
-# CRITICAL: ComfyUI-Manager v3.38+ requires ComfyUI v0.3.76+ and will block
-# ALL operations with "ComfyUI version is outdated!" error on older versions.
-# We MUST use v3.37.1 (last version before the v3.38 security migration).
+# Version matching is CRITICAL to prevent execution.py patching errors:
+# - COMFYUI_USE_LATEST=true  → Use latest ComfyUI-Manager (for latest ComfyUI)
+# - COMFYUI_USE_LATEST=false → Use v3.37.1 (for stable ComfyUI v0.3.55)
+#
+# Mismatched versions cause: "patched_execute() takes X positional arguments but Y were given"
 # This section runs EVERY startup to fix any incorrect Manager versions.
 # ============================================================================
 
 echo "🧩 Checking ComfyUI-Manager version..."
 cd /comfyui/custom_nodes
 
-MANAGER_VERSION="3.37.1"
-MANAGER_NEEDS_INSTALL=false
+# ============================================================================
+# ComfyUI-Manager Version Selection
+# ============================================================================
+# When COMFYUI_USE_LATEST=true: Use latest ComfyUI-Manager (compatible with latest ComfyUI)
+# When COMFYUI_USE_LATEST=false: Use v3.37.1 (last version compatible with v0.3.55)
+#
+# CRITICAL: ComfyUI-Manager v3.38+ patches execution.py with updated function signatures.
+# Using the wrong version causes: "patched_execute() takes X positional arguments but Y were given"
+# ============================================================================
 
-# Check if Manager exists and verify version
-if [ -d "ComfyUI-Manager" ]; then
-    # Check the version in manager_core.py
-    if [ -f "ComfyUI-Manager/glob/manager_core.py" ]; then
-        INSTALLED_VERSION=$(grep -oP "version_code = \[\K[0-9, ]+" ComfyUI-Manager/glob/manager_core.py 2>/dev/null | tr -d ' ' || echo "")
-        if [ "$INSTALLED_VERSION" = "3,37,1" ]; then
-            echo "   ✅ ComfyUI-Manager v${MANAGER_VERSION} already installed correctly"
+if [ "$COMFYUI_USE_LATEST" = "true" ]; then
+    # Latest ComfyUI needs latest ComfyUI-Manager
+    echo "   📦 Using LATEST ComfyUI-Manager (for latest ComfyUI)..."
+    MANAGER_VERSION="latest"
+    MANAGER_NEEDS_INSTALL=false
+
+    if [ -d "ComfyUI-Manager" ]; then
+        # For latest mode, always update to get the newest version
+        echo "   🔄 Updating ComfyUI-Manager to latest..."
+        cd ComfyUI-Manager
+        git fetch origin
+        git reset --hard origin/main
+        cd ..
+        MANAGER_NEEDS_INSTALL=false
+    else
+        MANAGER_NEEDS_INSTALL=true
+    fi
+
+    if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
+        rm -rf ComfyUI-Manager
+        echo "   Installing ComfyUI-Manager (latest) from Comfy-Org..."
+        git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
+    fi
+
+    # Install dependencies
+    echo "   📦 Installing ComfyUI-Manager dependencies..."
+    if [ -f "ComfyUI-Manager/requirements.txt" ]; then
+        pip install -r ComfyUI-Manager/requirements.txt
+    fi
+else
+    # Stable ComfyUI v0.3.55 needs pinned ComfyUI-Manager v3.37.1
+    MANAGER_VERSION="3.37.1"
+    MANAGER_NEEDS_INSTALL=false
+
+    # Check if Manager exists and verify version
+    if [ -d "ComfyUI-Manager" ]; then
+        # Check the version in manager_core.py
+        if [ -f "ComfyUI-Manager/glob/manager_core.py" ]; then
+            INSTALLED_VERSION=$(grep -oP "version_code = \[\K[0-9, ]+" ComfyUI-Manager/glob/manager_core.py 2>/dev/null | tr -d ' ' || echo "")
+            if [ "$INSTALLED_VERSION" = "3,37,1" ]; then
+                echo "   ✅ ComfyUI-Manager v${MANAGER_VERSION} already installed correctly"
+            else
+                echo "   ⚠️  Wrong version detected: $INSTALLED_VERSION - reinstalling v${MANAGER_VERSION}..."
+                MANAGER_NEEDS_INSTALL=true
+            fi
         else
-            echo "   ⚠️  Wrong version detected: $INSTALLED_VERSION - reinstalling v${MANAGER_VERSION}..."
+            echo "   ⚠️  Manager found but version file missing - reinstalling..."
             MANAGER_NEEDS_INSTALL=true
         fi
     else
-        echo "   ⚠️  Manager found but version file missing - reinstalling..."
+        echo "   📦 ComfyUI-Manager not found - installing..."
         MANAGER_NEEDS_INSTALL=true
     fi
-else
-    echo "   📦 ComfyUI-Manager not found - installing..."
-    MANAGER_NEEDS_INSTALL=true
-fi
 
-if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
-    # Remove any existing installation
-    rm -rf ComfyUI-Manager
+    if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
+        # Remove any existing installation
+        rm -rf ComfyUI-Manager
 
-    echo "Installing ComfyUI-Manager v${MANAGER_VERSION} from Comfy-Org..."
-    # Use the new official Comfy-Org repository (ltdrdata repo redirects here)
-    git clone --branch ${MANAGER_VERSION} --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
+        echo "Installing ComfyUI-Manager v${MANAGER_VERSION} from Comfy-Org..."
+        # Use the new official Comfy-Org repository (ltdrdata repo redirects here)
+        git clone --branch ${MANAGER_VERSION} --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
 
-    # Install dependencies
-    echo "📦 Installing ComfyUI-Manager dependencies..."
-    if [ -f "ComfyUI-Manager/requirements.txt" ]; then
-        pip install -r ComfyUI-Manager/requirements.txt
+        # Install dependencies
+        echo "📦 Installing ComfyUI-Manager dependencies..."
+        if [ -f "ComfyUI-Manager/requirements.txt" ]; then
+            pip install -r ComfyUI-Manager/requirements.txt
+        fi
     fi
 fi
 
 # ALWAYS configure ComfyUI-Manager with security_level=weak (runs every startup)
-# This is required for ComfyUI-Manager v3.37.1 with ComfyUI v0.3.55
+# This is required for both v3.37.1 and latest versions
 echo "⚙️  Configuring ComfyUI-Manager (security_level=weak)..."
 
 # Create config in multiple locations to ensure it works
-# Location 1: Inside ComfyUI-Manager custom node directory (v3.37.1 location)
+# Location 1: Inside ComfyUI-Manager custom node directory
 MANAGER_NODE_CONFIG="/comfyui/custom_nodes/ComfyUI-Manager/config.ini"
 cat > "$MANAGER_NODE_CONFIG" << 'MANAGEREOF'
 [default]
