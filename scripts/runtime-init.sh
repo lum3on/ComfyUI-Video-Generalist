@@ -492,6 +492,20 @@ c.ContentsManager.allow_hidden = True
 c.FileContentsManager.always_delete_dir = True
 EOF
 
+# Initialize dummy git repo in /comfyui to prevent hangs
+# Some packages (SageAttention/Triton) try to run `git describe --tags` for version detection
+# If /comfyui isn't a git repo, this can hang forever during workflow execution
+echo "🔧 Initializing git repo in /comfyui (prevents version detection hangs)..."
+if [ ! -d "/comfyui/.git" ]; then
+    cd /comfyui
+    git init -q
+    git config user.email "comfyui@local"
+    git config user.name "ComfyUI"
+    git commit --allow-empty -m "init" -q
+    git tag v0.0.0
+    cd /
+fi
+
 # Clean up
 echo "🧹 Cleaning up..."
 rm -rf /root/.cache/pip
