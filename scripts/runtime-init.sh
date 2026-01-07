@@ -329,31 +329,68 @@ echo ""
 # Without triton, SageAttention will fail silently and output noise
 # Using prebuilt Triton wheel from Kijai for better compatibility with PyTorch 2.7
 TRITON_WHEEL_URL="https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/triton-3.3.0-cp312-cp312-linux_x86_64.whl"
-SAGEATTENTION_WHEEL_URL="https://huggingface.co/Kijai/PrecompiledWheels/resolve/main/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl"
 
-echo "� Installing Triton 3.3.0 from prebuilt wheel (required for SageAttention)..."
+echo "📦 Installing Triton 3.3.0 from prebuilt wheel (required for SageAttention)..."
 echo "   URL: $TRITON_WHEEL_URL"
 uv pip install --no-cache packaging "$TRITON_WHEEL_URL"
 
 echo ""
-echo "📦 Installing SageAttention 2.2.0 from prebuilt wheel..."
-echo "   URL: $SAGEATTENTION_WHEEL_URL"
+echo "==================================================================="
+echo "🚀 Building SageAttention from source for GPU architecture..."
+echo "==================================================================="
+echo "⚠️  Prebuilt wheels don't include SM90 kernels for H200/Hopper GPUs"
+echo "   Building from source to compile CUDA kernels for this GPU..."
 echo ""
 
-uv pip install --no-cache "$SAGEATTENTION_WHEEL_URL"
+# Install build dependencies
+echo "📦 Installing build dependencies (wheel, setuptools, ninja)..."
+uv pip install --no-cache wheel setuptools ninja
 
-if [ $? -eq 0 ]; then
+# Clone and build SageAttention from source
+# This ensures SM90 kernels are compiled for H200 GPUs (compute capability 9.0)
+cd /tmp
+if [ -d "SageAttention" ]; then
+    rm -rf SageAttention
+fi
+
+echo "📥 Cloning SageAttention repository..."
+git clone https://github.com/thu-ml/SageAttention.git
+cd SageAttention
+
+echo ""
+echo "🔨 Compiling CUDA kernels with parallel build..."
+echo "   This may take 3-5 minutes depending on GPU..."
+echo "-------------------------------------------------------------------"
+
+# Build with parallel compilation for speed
+# CRITICAL: Explicitly set TORCH_CUDA_ARCH_LIST to include SM90 for H200/Hopper GPUs
+# Without this, the build may not compile SM90 kernels even when running on H200
+export TORCH_CUDA_ARCH_LIST="9.0"
+export EXT_PARALLEL=4
+export NVCC_APPEND_FLAGS="--threads 8"
+export MAX_JOBS=32
+
+pip install . --no-cache-dir
+
+BUILD_RESULT=$?
+
+# Clean up build artifacts
+cd /
+rm -rf /tmp/SageAttention
+
+if [ $BUILD_RESULT -eq 0 ]; then
+    echo "-------------------------------------------------------------------"
     echo ""
-    echo "✅ SageAttention2++ wheel installed successfully!"
-    echo "   Using prebuilt wheel - no compilation needed!"
+    echo "✅ SageAttention2++ built successfully from source!"
+    echo "   SM90 kernels compiled for this GPU architecture"
 else
     echo ""
-    echo "❌ SageAttention2++ installation failed!"
-    echo "   Attempted to install from: $SAGEATTENTION_WHEEL_URL"
+    echo "❌ SageAttention2++ build failed!"
+    echo "   Check GPU availability and CUDA toolkit"
     exit 1
 fi
 
-# Verify SageAttention is importable and triton is working
+# Verify SageAttention is importable, triton is working, AND SM90 kernels are available
 echo ""
 echo "🧪 Verifying SageAttention installation..."
 python -c "
@@ -371,6 +408,19 @@ try:
 except ImportError as e:
     print(f'  ❌ SageAttention import failed: {e}')
     sys.exit(1)
+
+# CRITICAL: Verify SM90 kernels are available for H200/Hopper GPUs
+try:
+    from sageattention.core import SM90_ENABLED
+    if SM90_ENABLED:
+        print(f'  ✅ SM90 kernels (H200/Hopper) - ENABLED')
+    else:
+        print(f'  ❌ SM90 kernels NOT enabled - H200 will fail!')
+        print(f'     Rebuild SageAttention with TORCH_CUDA_ARCH_LIST=9.0')
+        sys.exit(1)
+except ImportError:
+    # Older versions may not have this check
+    print(f'  ⚠️  Could not verify SM90 status (older SageAttention version)')
 
 print('  ✅ All SageAttention dependencies verified!')
 "
