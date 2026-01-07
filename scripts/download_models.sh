@@ -10,7 +10,7 @@ echo "========================================="
 # ============================================================================
 # All flags default to DOWNLOAD_ALL value. Set individual flags to override.
 #
-# DOWNLOAD_WAN_CORE=true     - Core WAN 2.2 T2V models (~60GB) + CLIP/VAE/LoRAs
+# DOWNLOAD_WAN_CORE=true     - Core WAN 2.2 T2V models (~60GB) + CLIP/VAE/LoRAs/Upscale
 # DOWNLOAD_VACE=true         - VACE modules for video editing (~30GB)
 # DOWNLOAD_ANIMATE=true      - Animate 14B model (~28GB)
 # DOWNLOAD_SCAIL=true        - SCAIL preview model (~28GB)
@@ -47,11 +47,12 @@ echo "========================================="
 : "${DOWNLOAD_MATANYONE:=$DOWNLOAD_ALL}"
 
 # BUNDLE LOGIC: WAN_CORE includes essential dependencies
-# If WAN_CORE is enabled, also enable CLIP, VAE, and LoRAs (required for T2V)
+# If WAN_CORE is enabled, also enable CLIP, VAE, LoRAs, and Upscale models (required for T2V workflows)
 if [ "$DOWNLOAD_WAN_CORE" = "true" ]; then
     DOWNLOAD_CLIP="true"
     DOWNLOAD_VAE="true"
     DOWNLOAD_LORAS="true"
+    DOWNLOAD_UPSCALE="true"
 fi
 
 # Model storage directory (use RunPod's persistent /workspace if available)
