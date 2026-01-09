@@ -9,9 +9,8 @@
 # Using devel image (includes nvcc) for SageAttention2++ compilation at runtime
 FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04 AS base
 
-# Build arguments
-ARG COMFYUI_VERSION=v0.3.55
-# Note: Using nightly builds for CUDA 12.8 support (stable version doesn't exist yet)
+# Build arguments (ComfyUI always uses latest version)
+# Note: Using nightly builds for CUDA 12.8 support
 
 # Environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -54,9 +53,9 @@ ENV PATH="/opt/venv/bin:${PATH}"
 # Install comfy-cli and dependencies
 RUN uv pip install comfy-cli pip setuptools wheel
 
-# Install ComfyUI with CUDA 12.8 support
+# Install ComfyUI (latest version) with CUDA 12.8 support
 # COMFY_SKIP_FETCH_REGISTRY=1 prevents the slow "FETCH ComfyRegistry Data" during build
-RUN COMFY_SKIP_FETCH_REGISTRY=1 /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION}" --nvidia
+RUN COMFY_SKIP_FETCH_REGISTRY=1 /usr/bin/yes | comfy --workspace /comfyui install --nvidia
 
 # Install PyTorch with CUDA 12.8 support
 # Using regular pip instead of uv pip for better compatibility with PyTorch index
@@ -93,12 +92,12 @@ FROM base AS custom_nodes
 WORKDIR /comfyui/custom_nodes
 
 # Install ComfyUI Manager (remove if exists to ensure fresh clone)
-# Using v3.37.1 which is compatible with ComfyUI v0.3.55
+# Always using latest version for compatibility with latest ComfyUI
 # NOTE: The "FETCH ComfyRegistry Data" messages happen at runtime when ComfyUI starts,
 # not during Docker build. This is normal behavior - ComfyUI-Manager fetches node registry
 # data to show available nodes. This only takes a few seconds and is cached.
 RUN rm -rf ComfyUI-Manager && \
-    git clone --branch 3.37.1 --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
+    git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
 
 # Install ComfyUI Custom Scripts (remove if exists to ensure fresh clone)
 RUN rm -rf ComfyUI-Custom-Scripts && \
@@ -251,10 +250,10 @@ CMD ["/start.sh"]
 
 # Labels
 LABEL maintainer="WAN 2.2 RunPod Compute Template"
-LABEL description="RunPod COMPUTE template for WAN 2.2 with CUDA 12.8, PyTorch nightly, ComfyUI v0.3.55, and JupyterLab. ComfyUI on port 8188, JupyterLab on port 8189."
+LABEL description="RunPod COMPUTE template for WAN 2.2 with CUDA 12.8, PyTorch nightly, ComfyUI (latest), and JupyterLab. ComfyUI on port 8188, JupyterLab on port 8189."
 LABEL cuda.version="12.8.1"
 LABEL pytorch.version="nightly"
-LABEL comfyui.version="v0.3.55"
+LABEL comfyui.version="latest"
 LABEL wan.version="2.2"
 LABEL template.type="compute"
 LABEL ports.comfyui="8188"

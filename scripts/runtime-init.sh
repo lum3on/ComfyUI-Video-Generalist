@@ -9,14 +9,6 @@ echo "==================================================================="
 echo "WAN 2.2 Runtime Initialization"
 echo "==================================================================="
 
-# ============================================================================
-# COMFYUI VERSION FLAG - Set in RunPod Environment Variables
-# ============================================================================
-# COMFYUI_USE_LATEST=true   - Install latest ComfyUI version (bleeding edge)
-# COMFYUI_USE_LATEST=false  - Use pinned stable version v0.3.55 (default)
-# ============================================================================
-: "${COMFYUI_USE_LATEST:=false}"
-
 # Check if already initialized (for persistent storage)
 ALREADY_INITIALIZED=false
 if [ -f "/comfyui/.initialized" ]; then
@@ -28,15 +20,8 @@ if [ "$ALREADY_INITIALIZED" = false ]; then
     cd /
     # COMFY_SKIP_FETCH_REGISTRY=1 prevents the slow "FETCH ComfyRegistry Data" during init
     # The registry fetch will happen when ComfyUI actually starts
-
-    if [ "$COMFYUI_USE_LATEST" = "true" ]; then
-        echo "📦 Installing ComfyUI (LATEST version)..."
-        echo "   ⚠️  Note: Latest version may have compatibility issues with some nodes"
-        COMFY_SKIP_FETCH_REGISTRY=1 /usr/bin/yes | comfy --workspace /comfyui install --nvidia
-    else
-        echo "📦 Installing ComfyUI ${COMFYUI_VERSION:-v0.3.55} (stable)..."
-        COMFY_SKIP_FETCH_REGISTRY=1 /usr/bin/yes | comfy --workspace /comfyui install --version "${COMFYUI_VERSION:-v0.3.55}" --nvidia
-    fi
+    echo "📦 Installing ComfyUI (LATEST version)..."
+    COMFY_SKIP_FETCH_REGISTRY=1 /usr/bin/yes | comfy --workspace /comfyui install --nvidia
 fi
 
 # Copy extra_model_paths.yaml for network volume support
@@ -45,22 +30,10 @@ if [ -f "/etc/extra_model_paths.yaml" ] && [ ! -f "/comfyui/extra_model_paths.ya
     cp /etc/extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 fi
 
-# Only install PyTorch and dependencies on first init
+# Only install dependencies on first init
 if [ "$ALREADY_INITIALIZED" = false ]; then
-    if [ "$COMFYUI_USE_LATEST" = "true" ]; then
-        # When using latest ComfyUI, let it install its own PyTorch version (2.9.x)
-        # via comfy-cli requirements - this ensures compatibility with latest ComfyUI
-        echo "🔥 Skipping PyTorch install - latest ComfyUI will use PyTorch 2.9.x from requirements..."
-    else
-        # Install PyTorch 2.7.1 with CUDA 12.8 support (pinned version for stability)
-        # Note: Latest PyTorch (2.9.x) may have compatibility issues with some custom nodes
-        echo "🔥 Installing PyTorch 2.7.1 with CUDA 12.8 support..."
-        pip install --no-cache-dir \
-            torch==2.7.1+cu128 \
-            torchvision==0.22.1+cu128 \
-            torchaudio==2.7.1+cu128 \
-            --index-url https://download.pytorch.org/whl/cu128
-    fi
+    # Latest ComfyUI will install its own PyTorch version via comfy-cli requirements
+    echo "🔥 Using PyTorch from ComfyUI requirements (ensures compatibility)..."
 
     echo "⚡ Installing HuggingFace CLI for fast model downloads..."
     uv pip install --no-cache huggingface-hub[cli,hf_transfer]
@@ -68,97 +41,37 @@ fi
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
 # ============================================================================
-# ComfyUI-Manager Installation - ALWAYS runs to ensure correct version
-# ============================================================================
-# Version matching is CRITICAL to prevent execution.py patching errors:
-# - COMFYUI_USE_LATEST=true  → Use latest ComfyUI-Manager (for latest ComfyUI)
-# - COMFYUI_USE_LATEST=false → Use v3.37.1 (for stable ComfyUI v0.3.55)
-#
-# Mismatched versions cause: "patched_execute() takes X positional arguments but Y were given"
-# This section runs EVERY startup to fix any incorrect Manager versions.
+# ComfyUI-Manager Installation - ALWAYS runs to ensure latest version
 # ============================================================================
 
 echo "🧩 Checking ComfyUI-Manager version..."
 cd /comfyui/custom_nodes
 
-# ============================================================================
-# ComfyUI-Manager Version Selection
-# ============================================================================
-# When COMFYUI_USE_LATEST=true: Use latest ComfyUI-Manager (compatible with latest ComfyUI)
-# When COMFYUI_USE_LATEST=false: Use v3.37.1 (last version compatible with v0.3.55)
-#
-# CRITICAL: ComfyUI-Manager v3.38+ patches execution.py with updated function signatures.
-# Using the wrong version causes: "patched_execute() takes X positional arguments but Y were given"
-# ============================================================================
+# Always use latest ComfyUI-Manager (compatible with latest ComfyUI)
+echo "   📦 Using LATEST ComfyUI-Manager..."
+MANAGER_NEEDS_INSTALL=false
 
-if [ "$COMFYUI_USE_LATEST" = "true" ]; then
-    # Latest ComfyUI needs latest ComfyUI-Manager
-    echo "   📦 Using LATEST ComfyUI-Manager (for latest ComfyUI)..."
-    MANAGER_VERSION="latest"
-    MANAGER_NEEDS_INSTALL=false
-
-    if [ -d "ComfyUI-Manager" ]; then
-        # For latest mode, always update to get the newest version
-        echo "   🔄 Updating ComfyUI-Manager to latest..."
-        cd ComfyUI-Manager
-        git fetch origin
-        git reset --hard origin/main
-        cd ..
-        MANAGER_NEEDS_INSTALL=false
-    else
-        MANAGER_NEEDS_INSTALL=true
-    fi
-
-    if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
-        rm -rf ComfyUI-Manager
-        echo "   Installing ComfyUI-Manager (latest) from Comfy-Org..."
-        git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
-    fi
-
-    # Install dependencies
-    echo "   📦 Installing ComfyUI-Manager dependencies..."
-    if [ -f "ComfyUI-Manager/requirements.txt" ]; then
-        pip install -r ComfyUI-Manager/requirements.txt
-    fi
+if [ -d "ComfyUI-Manager" ]; then
+    # Always update to get the newest version
+    echo "   🔄 Updating ComfyUI-Manager to latest..."
+    cd ComfyUI-Manager
+    git fetch origin
+    git reset --hard origin/main
+    cd ..
 else
-    # Stable ComfyUI v0.3.55 needs pinned ComfyUI-Manager v3.37.1
-    MANAGER_VERSION="3.37.1"
-    MANAGER_NEEDS_INSTALL=false
+    MANAGER_NEEDS_INSTALL=true
+fi
 
-    # Check if Manager exists and verify version
-    if [ -d "ComfyUI-Manager" ]; then
-        # Check the version in manager_core.py
-        if [ -f "ComfyUI-Manager/glob/manager_core.py" ]; then
-            INSTALLED_VERSION=$(grep -oP "version_code = \[\K[0-9, ]+" ComfyUI-Manager/glob/manager_core.py 2>/dev/null | tr -d ' ' || echo "")
-            if [ "$INSTALLED_VERSION" = "3,37,1" ]; then
-                echo "   ✅ ComfyUI-Manager v${MANAGER_VERSION} already installed correctly"
-            else
-                echo "   ⚠️  Wrong version detected: $INSTALLED_VERSION - reinstalling v${MANAGER_VERSION}..."
-                MANAGER_NEEDS_INSTALL=true
-            fi
-        else
-            echo "   ⚠️  Manager found but version file missing - reinstalling..."
-            MANAGER_NEEDS_INSTALL=true
-        fi
-    else
-        echo "   📦 ComfyUI-Manager not found - installing..."
-        MANAGER_NEEDS_INSTALL=true
-    fi
+if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
+    rm -rf ComfyUI-Manager
+    echo "   Installing ComfyUI-Manager (latest) from Comfy-Org..."
+    git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
+fi
 
-    if [ "$MANAGER_NEEDS_INSTALL" = true ]; then
-        # Remove any existing installation
-        rm -rf ComfyUI-Manager
-
-        echo "Installing ComfyUI-Manager v${MANAGER_VERSION} from Comfy-Org..."
-        # Use the new official Comfy-Org repository (ltdrdata repo redirects here)
-        git clone --branch ${MANAGER_VERSION} --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager.git
-
-        # Install dependencies
-        echo "📦 Installing ComfyUI-Manager dependencies..."
-        if [ -f "ComfyUI-Manager/requirements.txt" ]; then
-            pip install -r ComfyUI-Manager/requirements.txt
-        fi
-    fi
+# Install dependencies
+echo "   📦 Installing ComfyUI-Manager dependencies..."
+if [ -f "ComfyUI-Manager/requirements.txt" ]; then
+    pip install -r ComfyUI-Manager/requirements.txt
 fi
 
 # ALWAYS configure ComfyUI-Manager with security_level=weak (runs every startup)
@@ -248,21 +161,6 @@ if [ ! -d "ComfyUI_LayerStyle_Advance" ]; then
     git clone https://github.com/chflame163/ComfyUI_LayerStyle_Advance.git
 fi
 
-# Install ComfyUI_performance-report (skip if using latest ComfyUI - incompatible with new execute signature)
-if [ "$COMFYUI_USE_LATEST" != "true" ]; then
-    if [ ! -d "ComfyUI_performance-report" ]; then
-        echo "Installing ComfyUI_performance-report..."
-        git clone https://github.com/njlent/ComfyUI_performance-report.git
-    fi
-else
-    echo "⚠️ Skipping ComfyUI_performance-report (incompatible with latest ComfyUI)"
-    # Remove existing installation if present to prevent errors
-    if [ -d "ComfyUI_performance-report" ]; then
-        echo "  → Removing existing ComfyUI_performance-report (incompatible)..."
-        rm -rf ComfyUI_performance-report
-    fi
-fi
-
 # Install LanPaint
 if [ ! -d "LanPaint" ]; then
     echo "Installing LanPaint..."
@@ -342,12 +240,6 @@ if [ -f "ComfyUI_LayerStyle_Advance/requirements.txt" ]; then
     uv pip install --no-cache -r ComfyUI_LayerStyle_Advance/requirements.txt
     # Pin timm to compatible version (0.9.x has RotaryEmbedding)
     uv pip install --no-cache "timm>=0.9.0,<1.0.0"
-fi
-
-# ComfyUI_performance-report dependencies (skip if using latest ComfyUI)
-if [ "$COMFYUI_USE_LATEST" != "true" ] && [ -f "ComfyUI_performance-report/requirements.txt" ]; then
-    echo "  → ComfyUI_performance-report..."
-    uv pip install --no-cache -r ComfyUI_performance-report/requirements.txt
 fi
 
 # ComfyUI-MatAnyone dependencies (torch is already installed, just need omegaconf)

@@ -9,8 +9,7 @@
 # Using devel image (includes nvcc) for SageAttention2++ compilation at runtime
 FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04 AS base
 
-# Build arguments
-ARG COMFYUI_VERSION=v0.3.55
+# Build arguments (ComfyUI always uses latest version at runtime)
 
 # Environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -167,7 +166,7 @@ LABEL maintainer="WAN 2.2 RunPod CI-Optimized Template"
 LABEL description="RunPod template for WAN 2.2 with runtime PyTorch installation. ComfyUI on port 8188, JupyterLab on port 8189."
 LABEL cuda.version="12.8.1"
 LABEL pytorch.version="runtime-install"
-LABEL comfyui.version="v0.3.55"
+LABEL comfyui.version="latest"
 LABEL wan.version="2.2"
 LABEL template.type="ci-optimized"
 LABEL ports.comfyui="8188"
