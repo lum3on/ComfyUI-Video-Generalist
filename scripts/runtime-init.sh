@@ -197,6 +197,7 @@ fi
 echo "📚 Installing custom node dependencies..."
 
 # WAN Video Wrapper dependencies
+# NOTE: opencv is installed at the end to avoid conflicts between packages
 echo "  → WAN Video Wrapper..."
 uv pip install --no-cache \
     ftfy \
@@ -208,7 +209,6 @@ uv pip install --no-cache \
     protobuf \
     pyloudnorm \
     gguf>=0.17.1 \
-    opencv-python \
     scipy
 
 # ComfyUI-KJNodes dependencies (v1.1.9)
@@ -231,12 +231,10 @@ if [ -f "ComfyUI_Fill-Nodes/requirements.txt" ]; then
 fi
 
 # ComfyUI_LayerStyle dependencies
-# Requires opencv-contrib-python for guidedFilter function
+# NOTE: opencv-contrib-python is installed at the end to avoid conflicts
 if [ -f "ComfyUI_LayerStyle/requirements.txt" ]; then
     echo "  → ComfyUI_LayerStyle..."
     uv pip install --no-cache -r ComfyUI_LayerStyle/requirements.txt
-    # Install opencv-contrib-python for guidedFilter (replaces opencv-python)
-    uv pip install --no-cache opencv-contrib-python
 fi
 
 # ComfyUI_LayerStyle_Advance dependencies
@@ -258,6 +256,24 @@ if [ -d "ComfyUI-MatAnyone" ]; then
         uv pip install --no-cache -r ComfyUI-MatAnyone/requirements.txt
     fi
 fi
+
+# ============================================================================
+# OpenCV Installation - MUST BE LAST to avoid conflicts
+# ============================================================================
+# Different nodes install different opencv variants which conflict:
+# - opencv-python (basic)
+# - opencv-python-headless (no GUI, for servers)
+# - opencv-contrib-python (with extra modules like guidedFilter)
+# - opencv-contrib-python-headless (headless + extra modules)
+#
+# These packages are MUTUALLY EXCLUSIVE - installing one uninstalls others.
+# We use opencv-contrib-python-headless because:
+# 1. "headless" - no GUI deps (good for Docker/servers)
+# 2. "contrib" - includes guidedFilter needed by LayerStyle
+# 3. Compatible with KJNodes and all other nodes
+# ============================================================================
+echo "  → OpenCV (headless with contrib modules)..."
+uv pip install --no-cache opencv-contrib-python-headless
 
 echo "✅ Custom nodes and dependencies installed!"
 
