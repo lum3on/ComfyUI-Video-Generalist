@@ -105,25 +105,31 @@ fi
 
 echo "🧩 Installing other custom nodes..."
 
-# Install WAN Video Wrapper (pinned to v1.3.0 - commit d9def84332e50af26ec5cde080d4c3703b837520)
-# This version is tested and stable with our ComfyUI setup
+# Install WAN Video Wrapper (latest from main branch)
 if [ ! -d "ComfyUI-WanVideoWrapper" ]; then
-    echo "Installing ComfyUI-WanVideoWrapper v1.3.0..."
+    echo "Installing ComfyUI-WanVideoWrapper (latest)..."
     git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git
-    cd ComfyUI-WanVideoWrapper
-    git checkout d9def84332e50af26ec5cde080d4c3703b837520
-    cd ..
 fi
+# Ensure WanVideoWrapper is on main branch to prevent ComfyUI-Manager update conflicts
+cd ComfyUI-WanVideoWrapper
+git fetch origin
+git checkout main 2>/dev/null || git checkout -b main origin/main
+git reset --hard origin/main
+cd ..
 
-# Install ComfyUI-KJNodes (pinned to v1.1.9 - commit e64b67b8f4aa3a555cec61cf18ee7d1cfbb3e5f0)
-# This version is tested and stable with our ComfyUI setup
+# Install ComfyUI-KJNodes (latest from main branch)
+# Always ensure it's on the main branch to avoid ComfyUI-Manager update conflicts
 if [ ! -d "ComfyUI-KJNodes" ]; then
-    echo "Installing ComfyUI-KJNodes v1.1.9..."
+    echo "Installing ComfyUI-KJNodes (latest)..."
     git clone https://github.com/kijai/ComfyUI-KJNodes.git
-    cd ComfyUI-KJNodes
-    git checkout e64b67b8f4aa3a555cec61cf18ee7d1cfbb3e5f0
-    cd ..
 fi
+# Fix git branch state to prevent ComfyUI-Manager conflicts
+# The Manager tries to switch between main/master which fails if repo is in detached HEAD
+cd ComfyUI-KJNodes
+git fetch origin
+git checkout main 2>/dev/null || git checkout -b main origin/main
+git reset --hard origin/main
+cd ..
 
 # Install ComfyUI-VideoHelperSuite
 if [ ! -d "ComfyUI-VideoHelperSuite" ]; then
