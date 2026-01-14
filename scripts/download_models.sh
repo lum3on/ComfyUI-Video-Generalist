@@ -534,7 +534,9 @@ if [ "$DOWNLOAD_LIGHTX" = "true" ]; then
         "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-spatial-upscaler-x2-1.0.safetensors $MODEL_DIR/latent_upscale_models/ltx-2-spatial-upscaler-x2-1.0.safetensors" \
         "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-temporal-upscaler-x2-1.0.safetensors $MODEL_DIR/latent_upscale_models/ltx-2-temporal-upscaler-x2-1.0.safetensors" \
         "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors $MODEL_DIR/loras/ltx-2-19b-distilled-lora-384.safetensors" \
-        "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it.safetensors $MODEL_DIR/text_encoders/gemma_3_12B_it.safetensors"
+        "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it.safetensors $MODEL_DIR/text_encoders/gemma_3_12B_it.safetensors" \
+        "https://huggingface.co/Kijai/LTXV2_comfy/resolve/main/VAE/LTX2_video_vae_bf16.safetensors $MODEL_DIR/vae/LTX2_video_vae_bf16.safetensors" \
+        "https://huggingface.co/Kijai/LTXV2_comfy/resolve/main/VAE/LTX2_audio_vae_bf16.safetensors $MODEL_DIR/vae/LTX2_audio_vae_bf16.safetensors"
 else
     echo "   ⏭️  LTX-2 models SKIPPED (DOWNLOAD_LIGHTX=false)"
 fi
